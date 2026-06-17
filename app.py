@@ -5,17 +5,15 @@ import pandas as pd
 st.set_page_config(
     page_title="ระบบตรวจสอบโรงพยาบาลสำหรับสิทธิประกันสังคม",
     page_icon="🏥",
-    layout="centered"  # จัดให้อยู่ตรงกลางหน้าจอพอดีกับขนาดมือถือ
+    layout="centered"
 )
 
 # สไตล์ตกแต่งเพิ่มเติมให้แสดงผลบนมือถือสวยงาม (CSS Custom Styling)
 st.markdown("""
     <style>
-    /* ปรับขนาดตัวอักษรหลักในแอป */
     html, body, [data-testid="stMarkdownContainer"] {
         font-size: 15px;
     }
-    /* ตกแต่งกล่องข้อมูลโรงพยาบาล */
     .hospital-card {
         background-color: #f8f9fa;
         border-left: 5px solid #007bff;
@@ -34,8 +32,22 @@ st.markdown("""
         font-size: 13px;
         margin-top: 3px;
     }
+    /* ปรับให้รูปโลโก้อยู่ตรงกลาง */
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
+
+# --- ส่วนที่เพิ่มใหม่: แสดงโลโก้บริษัทขนาดเล็กไว้บนสุด ---
+try:
+    # แสดงโลโก้ขนาดความกว้าง 120 พิกเซล (ขนาดเล็กกำลังสวย ไม่ล้นจอมือถือ)
+    st.image("company_logo.png.bmp", width=120)
+except Exception:
+    # ถ้ายังไม่ได้อัปโหลดรูป ระบบจะไม่เออเร่อ แต่จะข้ามไปแสดงข้อความด้านล่างแทน
+    pass
 
 # ส่วนหัวของหน้าเว็บ
 st.title("🏥 ระบบตรวจสอบโรงพยาบาล")
@@ -77,7 +89,6 @@ if df is not None:
         
         df_all_province = df_filtered_prov.copy()
         if not df_all_province.empty:
-            # วนลูปแสดงผลทีละโรงพยาบาลเป็นกล่องข้อความเพื่อให้แสดงผลบนมือถือสวยงาม
             for idx, row in df_all_province.iterrows():
                 st.markdown(f"""
                 <div class="hospital-card">
