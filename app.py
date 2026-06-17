@@ -35,7 +35,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- ส่วนที่แก้ไข: ดึงโลโก้บริษัทเป็นไฟล์ .jpg ไว้บนสุด ---
+# แสดงโลโก้บริษัทขนาดเล็กไว้บนสุด (ถ้ามีไฟล์ company_logo.png)
 try:
     st.image("company_logo.jpg", width=120)
 except Exception:
@@ -69,4 +69,118 @@ NEARBY_DISTRICTS = {
     "จอมทอง": ["บางขุนเทียน", "บางบอน", "ราษฎร์บูรณะ", "ภาษีเจริญ"],
     "ราษฎร์บูรณะ": ["ทุ่งครุ", "จอมทอง", "บางขุนเทียน", "พระประแดง"],
     "บางแค": ["ภาษีเจริญ", "หนองแขม", "บางบอน", "ตลิ่งชัน"],
-    "หนองแขม":
+    "หนองแขม": ["บางแค", "บางบอน", "กระทุ่มแบน", "สามพราน"],
+    "ภาษีเจริญ": ["บางแค", "จอมทอง", "ตลิ่งชัน", "ธนบุรี"],
+    
+    # โซนภาคตะวันออก / พื้นที่อุตสาหกรรมยอดฮิต
+    "บางปะกง": ["เมืองฉะเชิงเทรา", "บ้านโพธิ์", "พานทอง", "เมืองชลบุรี"],
+    "พานทอง": ["บางปะกง", "บ้านบึง", "เมืองชลบุรี", "พนัสนิคม"],
+    "เมืองชลบุรี": ["พานทอง", "ศรีราชา", "บางปะกง"],
+    "ศรีราชา": ["เมืองชลบุรี", "บางละมุง", "ปลวกแดง"],
+    "ปลวกแดง": ["ศรีราชา", "บางละมุง", "นิคมพัฒนา", "บ้านค่าย"],
+}
+
+if df is not None:
+    # ส่วนฟิลเตอร์สำหรับเลือกพื้นที่
+    with st.container():
+        provinces = sorted(df['จังหวัด'].unique())
+        selected_province = st.selectbox("📌 1. เลือกจังหวัดของคุณ", provinces)
+        
+        df_filtered_prov = df[df['จังหวัด'] == selected_province]
+        
+        amphoes = sorted(df_filtered_prov['อำเภอ / เขต'].unique())
+        selected_amphoe = st.selectbox("🔍 2. เลือกอำเภอ / เขต ของคุณ", ["-- แสดงทุกอำเภอในจังหวัดนี้ --"] + amphoes)
+
+    st.markdown("---")
+    
+    # 1. กรณีกดเลือก "แสดงทุกอำเภอในจังหวัดนี้"
+    if selected_amphoe == "-- แสดงทุกอำเภอในจังหวัดนี้ --":
+        st.subheader(f"📋 รายชื่อทั้งหมดใน จังหวัด {selected_province}")
+        st.caption("💡 แนะนำให้เลือกโรงพยาบาลใกล้ตัวกรอกสิทธิให้ครบ 3 อันดับ")
+        
+        df_all_province = df_filtered_prov.copy()
+        if not df_all_province.empty:
+            for idx, row in df_all_province.iterrows():
+                st.markdown(f"""
+                <div class="hospital-card">
+                    <div class="hospital-name">🏥 {row['รายชื่อโรงพยาบาล']}</div>
+                    <div class="hospital-sub">📍 ต. {row['ตำบล / แขวง']} | อ. {row['อำเภอ / เขต']} | จ. {row['จังหวัด']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.success(f"🎉 พบโรงพยาบาลทั้งหมด {len(df_all_province)} แห่ง")
+        else:
+            st.warning(f"ไม่พบข้อมูลโรงพยาบาลในจังหวัด {selected_province}")
+            
+    else:
+        # หากเจาะจงอำเภอ
+        df_filtered_amphoe = df_filtered_prov[df_filtered_prov['อำเภอ / เขต'] == selected_amphoe]
+        
+        # 3. กล่องเลือกตำบล/แขวง
+        tambons = sorted(df_filtered_amphoe['ตำบล / แขวง'].unique())
+        selected_tambon = st.selectbox("🏠 3. เลือกตำบล / แขวง ปัจจุบันของคุณ", ["-- แสดงทุกตำบลในอำเภอนี้ --"] + tambons)
+        
+        st.markdown("---")
+        
+        # กรณีเจาะจงตำบล
+        if selected_tambon != "-- แสดงทุกตำบลในอำเภอนี้ --":
+            st.subheader(f"📍 โรงพยาบาลใน ตำบล/แขวง {selected_tambon}")
+            df_main = df_filtered_amphoe[df_filtered_amphoe['ตำบล / แขวง'] == selected_tambon].copy()
+            
+            if not df_main.empty:
+                for idx, row in df_main.iterrows():
+                    st.markdown(f"""
+                    <div class="hospital-card" style="border-left-color: #28a745;">
+                        <div class="hospital-name">🏥 {row['รายชื่อโรงพยาบาล']}</div>
+                        <div class="hospital-sub">📍 ตำบล/แขวง: {row['ตำบล / แขวง']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.warning(f"⚠️ ไม่พบโรงพยาบาลในตำบล {selected_tambon} โดยตรง (โปรดเลือกจากพื้นที่แนะนำด้านล่าง)")
+                
+            # --- คำนวณหาโรงพยาบาลแนะนำเพิ่มเติมในพื้นที่ใกล้เคียง (จำกัดแค่ 3 ที่พอดีๆ) ---
+            st.subheader("🔄 โรงพยาบาลแนะนำเพิ่มเติมในพื้นที่ใกล้เคียง")
+            st.caption("💡 คัดเลือกจากตำบลหรืออำเภอใกล้เคียงสูงสุด 3 แห่ง เพื่อความสะดวกในการเลือกอันดับสำรอง")
+            
+            # หาในอำเภอเดียวกันก่อน (แต่คนละตำบล)
+            df_sub = df_filtered_amphoe[df_filtered_amphoe['ตำบล / แขวง'] != selected_tambon].copy()
+            
+            # ค้นหาข้ามอำเภอใกล้เคียงเพิ่มเติมตามแผนที่ที่เราตั้งไว้ด้านบน
+            df_nearby_districts = pd.DataFrame()
+            if selected_amphoe in NEARBY_DISTRICTS:
+                list_nearby = NEARBY_DISTRICTS[selected_amphoe]
+                df_nearby_districts = df_filtered_prov[df_filtered_prov['อำเภอ / เขต'].isin(list_nearby)].copy()
+            
+            # รวมผลลัพธ์การแนะนำเข้าด้วยกัน
+            df_recommend = pd.concat([df_sub, df_nearby_districts], ignore_index=True).drop_duplicates(subset=['รายชื่อโรงพยาบาล'])
+            
+            if not df_recommend.empty:
+                # ดึงมาแค่ 3 รายการแรกสุดตามที่ต้องการ (.head(3)) เพื่อให้หน้าจอกระชับบนมือถือ
+                df_recommend_limit = df_recommend.head(3)
+                for idx, row in df_recommend_limit.iterrows():
+                    st.markdown(f"""
+                    <div class="hospital-card">
+                        <div class="hospital-name">🏥 {row['รายชื่อโรงพยาบาล']}</div>
+                        <div class="hospital-sub">📍 ต. {row['ตำบล / แขวง']} | อ. {row['อำเภอ / เขต']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown("<p style='color:gray;'>ไม่มีรายชื่อโรงพยาบาลเพิ่มเติมในพื้นที่ใกล้เคียง</p>", unsafe_allow_html=True)
+                
+        else:
+            # กรณีเลือกแสดงทุกตำบลในอำเภอ
+            st.subheader(f"📋 รายชื่อทั้งหมดใน อำเภอ/เขต {selected_amphoe}")
+            df_all_amphoe = df_filtered_amphoe.copy()
+            if not df_all_amphoe.empty:
+                for idx, row in df_all_amphoe.iterrows():
+                    st.markdown(f"""
+                    <div class="hospital-card">
+                        <div class="hospital-name">🏥 {row['รายชื่อโรงพยาบาล']}</div>
+                        <div class="hospital-sub">📍 ต. {row['ตำบล / แขวง']} | อ. {row['อำเภอ / เขต']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.success(f"🎉 พบโรงพยาบาลทั้งหมด {len(df_all_amphoe)} แห่ง")
+            else:
+                st.warning("ไม่พบข้อมูลโรงพยาบาลในอำเภอนี้")
+
+    st.markdown("---")
+    st.caption("ระบบบริการข้อมูลภายในบริษัท พัฒนาโดยใช้ Streamlit (ฟรีไม่มีค่าใช้จ่าย)")
