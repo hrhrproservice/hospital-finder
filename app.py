@@ -32,21 +32,13 @@ st.markdown("""
         font-size: 13px;
         margin-top: 3px;
     }
-    /* ปรับให้รูปโลโก้อยู่ตรงกลาง */
-    .logo-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 10px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- ส่วนที่เพิ่มใหม่: แสดงโลโก้บริษัทขนาดเล็กไว้บนสุด ---
+# แสดงโลโก้บริษัทขนาดเล็กไว้บนสุด (ถ้ามีไฟล์ company_logo.png)
 try:
-    # แสดงโลโก้ขนาดความกว้าง 120 พิกเซล (ขนาดเล็กกำลังสวย ไม่ล้นจอมือถือ)
     st.image("company_logo.jpg", width=120)
 except Exception:
-    # ถ้ายังไม่ได้อัปโหลดรูป ระบบจะไม่เออเร่อ แต่จะข้ามไปแสดงข้อความด้านล่างแทน
     pass
 
 # ส่วนหัวของหน้าเว็บ
@@ -126,13 +118,15 @@ if df is not None:
             else:
                 st.warning(f"⚠️ ไม่พบโรงพยาบาลในตำบล {selected_tambon} โดยตรง (โปรดเลือกพื้นที่ใกล้เคียงด้านล่าง)")
                 
-            # แสดงตำบลใกล้เคียงในอำเภอเดียวกัน
-            st.subheader("🔄 โรงพยาบาลแนะนำเพิ่มเติม (ในอำเภอ/เขตเดียวกัน)")
-            st.caption("💡 พนักงานสามารถใช้รายชื่อด้านล่างนี้กรอกเป็น โรงพยาบาลสำรองอันดับ 2 และ 3 ได้เลยค่ะ")
+            # --- จุดที่ปรับปรุง: ดึงโรงพยาบาลแนะนำในอำเภอเดียวกัน มาแสดงผลจำกัดแค่ 3 ที่พอดีๆ ---
+            st.subheader("🔄 โรงพยาบาลแนะนำเพิ่มเติมในพื้นที่ใกล้เคียง")
+            st.caption("💡 แนะนำเพิ่มเติมในอำเภอเดียวกันสูงสุด 3 แห่ง สำหรับเลือกเป็นอันดับสำรอง")
             
             df_sub = df_filtered_amphoe[df_filtered_amphoe['ตำบล / แขวง'] != selected_tambon].copy()
             if not df_sub.empty:
-                for idx, row in df_sub.iterrows():
+                # ดึงมาแค่ 3 รายการแรก (.head(3)) เพื่อไม่ให้ล้นหน้าจอมือถือ
+                df_sub_limit = df_sub.head(3)
+                for idx, row in df_sub_limit.iterrows():
                     st.markdown(f"""
                     <div class="hospital-card">
                         <div class="hospital-name">🏥 {row['รายชื่อโรงพยาบาล']}</div>
@@ -140,23 +134,4 @@ if df is not None:
                     </div>
                     """, unsafe_allow_html=True)
             else:
-                st.text("ไม่มีตำบลอื่นที่มีโรงพยาบาลเพิ่มเติมในอำเภอนี้")
-                
-        else:
-            # กรณีเลือกแสดงทุกตำบลในอำเภอ
-            st.subheader(f"📋 รายชื่อทั้งหมดใน อำเภอ/เขต {selected_amphoe}")
-            df_all_amphoe = df_filtered_amphoe.copy()
-            if not df_all_amphoe.empty:
-                for idx, row in df_all_amphoe.iterrows():
-                    st.markdown(f"""
-                    <div class="hospital-card">
-                        <div class="hospital-name">🏥 {row['รายชื่อโรงพยาบาล']}</div>
-                        <div class="hospital-sub">📍 ต. {row['ตำบล / แขวง']} | อ. {row['อำเภอ / เขต']}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                st.success(f"🎉 พบโรงพยาบาลทั้งหมด {len(df_all_amphoe)} แห่ง")
-            else:
-                st.warning("ไม่พบข้อมูลโรงพยาบาลในอำเภอนี้")
-
-    st.markdown("---")
-    st.caption("ระบบบริการข้อมูลภายในบริษัท พัฒนาโดยใช้ Streamlit (ฟรีไม่มีค่าใช้จ่าย)")
+                st.text
